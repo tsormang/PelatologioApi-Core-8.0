@@ -9,7 +9,11 @@ namespace PelatologioApi.Repository
 {
     public interface IProvider
     {
-        IEnumerable<Customer> GetCustomerData();
+        IEnumerable<Customer> GetCustomersData();
+        Customer GetCustomerData(int id);
+        void AddCustomerData(Customer customer);
+        void UpdateCustomerData(Customer customer);
+        Customer DeleteCustomerData(int id);
     }
 
 }

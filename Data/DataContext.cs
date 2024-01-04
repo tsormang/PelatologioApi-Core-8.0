@@ -13,8 +13,5 @@ namespace PelatologioApi.Data
         public DbSet<CustomerDbData> Customers { get; set; }
         public DbSet<TelephoneDbData> Telephone { get; set; }
 
-
     }
-
-
 }
