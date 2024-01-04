@@ -1,0 +1,6 @@
+@PelatologioApi_HostAddress = http://localhost:5261
+
+GET {{PelatologioApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
