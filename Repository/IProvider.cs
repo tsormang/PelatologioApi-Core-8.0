@@ -9,11 +9,13 @@ namespace PelatologioApi.Repository
 {
     public interface IProvider
     {
-        IEnumerable<Customer> GetCustomersData();
-        Customer GetCustomerData(int id);
-        void AddCustomerData(Customer customer);
-        void UpdateCustomerData(Customer customer);
-        Customer DeleteCustomerData(int id);
+        Task<IEnumerable<Customer>> GetCustomersData();
+        Task<Customer> GetCustomerData(int id);
+
+        Task<bool> AddCustomerData(Customer customer);
+        Task<bool> UpdateCustomerData(Customer customer);
+
+        Task<Customer> DeleteCustomerData(int id);
     }
 
 }

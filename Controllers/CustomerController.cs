@@ -22,7 +22,7 @@ namespace PelatologioApi.Controllers
         [HttpGet]
         public async Task<ActionResult<List<Customer>>> GetAllCustomers()
         {
-            var customers = _provider.GetCustomersData();
+            var customers = await _provider.GetCustomersData();
             if (!customers.Any())
                 return NotFound("No Customers found.");
             return Ok(customers);
@@ -31,7 +31,7 @@ namespace PelatologioApi.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Customer>> GetCustomer(int id)
         {
-            var customer = _provider.GetCustomerData(id);
+            var customer = await _provider.GetCustomerData(id);
 
             if (!string.IsNullOrEmpty(customer.Response))
                 return NotFound(customer.Response);
@@ -42,26 +42,30 @@ namespace PelatologioApi.Controllers
         [HttpPost]
         public async Task<ActionResult<List<Customer>>> AddCustomer(Customer customer)
         {
-            _provider.AddCustomerData(customer);
-            return Ok(_provider.GetCustomersData());
+            if(await _provider.AddCustomerData(customer))
+                return Ok(await _provider.GetCustomersData());
+            else 
+                return BadRequest(await _provider.GetCustomersData());
         }
 
         [HttpPut]
         public async Task<ActionResult<List<Customer>>> UpdateCustomer(Customer updatedCustomer)
         {
-            _provider.UpdateCustomerData(updatedCustomer);
-            return Ok(_provider.GetCustomersData());
+            if(await _provider.UpdateCustomerData(updatedCustomer))
+                return Ok(await _provider.GetCustomersData());
+            else
+                return BadRequest(await _provider.GetCustomersData());
         }
 
         [HttpDelete]
         public async Task<ActionResult<List<Customer>>> DeleteCustomer(int id)
         {
-            var customer = _provider.DeleteCustomerData(id);
+            var customer = await _provider.DeleteCustomerData(id);
 
             if (!string.IsNullOrEmpty(customer.Response))
                 return NotFound(customer.Response);
 
-            return Ok(_provider.GetCustomersData());
+            return Ok(await _provider.GetCustomersData());
         }
 
     }

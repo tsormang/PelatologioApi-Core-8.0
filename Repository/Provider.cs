@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PelatologioApi.Data;
 using PelatologioApi.Entities;
-using System.Collections;
-using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace PelatologioApi.Repository
 {
@@ -17,13 +17,13 @@ namespace PelatologioApi.Repository
             _context = context;
         }
 
-        public Customer DeleteCustomerData(int id)
+        public async Task<Customer> DeleteCustomerData(int id)
         {
-            var customerData = _context.Customers.Find(id);
+            var customerData = await _context.Customers.FindAsync(id);
             if (customerData != null)
             {
                 _context.Customers.Remove(customerData);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
                 return new Customer { };
             }
             else return new Customer
@@ -32,54 +32,74 @@ namespace PelatologioApi.Repository
             };
         }
 
-        public void UpdateCustomerData(Customer updatedCustomer)
+        public async Task<bool> UpdateCustomerData(Customer updatedCustomer)
         {
-            var dbCustomer = _context.Customers.Find(updatedCustomer.Id);
-            if (dbCustomer != null)
+            try
             {
-                dbCustomer.FirstName = updatedCustomer.FirstName;
-                dbCustomer.LastName = updatedCustomer.LastName;
-                dbCustomer.Address = updatedCustomer.Address;
-                dbCustomer.Email = updatedCustomer.Email;
+                var dbCustomer = await _context.Customers.FindAsync(updatedCustomer.Id);
+                if (dbCustomer != null)
+                {
+                    dbCustomer.FirstName = updatedCustomer.FirstName;
+                    dbCustomer.LastName = updatedCustomer.LastName;
+                    dbCustomer.Address = updatedCustomer.Address;
+                    dbCustomer.Email = updatedCustomer.Email;
+
+                    var dbCustomerTel = await _context.Telephone.FindAsync(dbCustomer.TelephoneId);
+                    if (dbCustomerTel != null)
+                    {
+                        dbCustomerTel.House = updatedCustomer.Telephones.House;
+                        dbCustomerTel.Mobile = updatedCustomer.Telephones.Mobile;
+                        dbCustomerTel.Work = updatedCustomer.Telephones.Work;
+                    }
+                }
+                await _context.SaveChangesAsync();
+                return true;
             }
-            var dbCustomerTel = _context.Telephone.Find(dbCustomer.TelephoneId);
-            if (dbCustomerTel != null)
+            catch (Exception)
             {
-                dbCustomerTel.House = updatedCustomer.Telephones.House;
-                dbCustomerTel.Mobile = updatedCustomer.Telephones.Mobile;
-                dbCustomerTel.Work = updatedCustomer.Telephones.Work;
+                return false;
             }
-            _context.SaveChanges();
+            
         }
 
-        public void AddCustomerData(Customer customer)
+        public async Task<bool> AddCustomerData(Customer customer)
         {
-            TelephoneDbData newTelephone = new TelephoneDbData()
+            try
             {
-                House = customer.Telephones.House,
-                Mobile = customer.Telephones.Mobile,
-                Work = customer.Telephones.Work,
-            };
+                TelephoneDbData newTelephone = new TelephoneDbData()
+                {
+                    House = customer.Telephones.House,
+                    Mobile = customer.Telephones.Mobile,
+                    Work = customer.Telephones.Work,
+                };
 
-            _context.Telephone.Add(newTelephone);
-            _context.SaveChanges();
-            int newTelephoneId = newTelephone.Id;
+                await _context.Telephone.AddAsync(newTelephone);
+                await _context.SaveChangesAsync();
+                int newTelephoneId = newTelephone.Id;
 
-            CustomerDbData newCustomer = new CustomerDbData()
+                CustomerDbData newCustomer = new CustomerDbData()
+                {
+                    TelephoneId = newTelephoneId,
+                    FirstName = customer.FirstName,
+                    LastName = customer.LastName,
+                    Address = customer.Address,
+                    Email = customer.Email
+                };
+
+                await _context.Customers.AddAsync(newCustomer);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception)
             {
-                TelephoneId = newTelephoneId,
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                Address = customer.Address,
-                Email = customer.Email
-            };
-            _context.Customers.Add(newCustomer);
-            _context.SaveChanges();
+                return false;
+            }
+            
         }
 
-        public Customer GetCustomerData(int id)
+        public async Task<Customer> GetCustomerData(int id)
         {
-            var customerData = _context.Customers.Find(id);
+            var customerData = await _context.Customers.FindAsync(id);
             if (customerData != null)
             {
                 var telephoneData = _context.Telephone;
@@ -99,10 +119,11 @@ namespace PelatologioApi.Repository
             };
         }
 
-        public IEnumerable<Customer> GetCustomersData()
+        public async Task<IEnumerable<Customer>> GetCustomersData()
         {
-            var customersData = _context.Customers;
-            var telephoneData = _context.Telephone;
+            var customersData = await _context.Customers.ToListAsync();
+            var telephoneData = await _context.Telephone.ToListAsync();
+
             if (customersData != null && customersData.Any())
             {
                 return customersData.Select(c => new Customer
@@ -112,7 +133,7 @@ namespace PelatologioApi.Repository
                     LastName = c.LastName,
                     Address = c.Address,
                     Email = c.Email,
-                    Telephones = telephoneData.Where(t => t.Id == c.TelephoneId).FirstOrDefault()
+                    Telephones = telephoneData.FirstOrDefault(t => t.Id == c.TelephoneId)
                 });
             }
             else return Enumerable.Empty<Customer>();
